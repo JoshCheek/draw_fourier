@@ -1,25 +1,21 @@
-extern crate svg;
-use svg::node::element::path::{Command, Data};
-use svg::node::element::tag::Path;
-use svg::parser::Event;
-use std::io::{self};
-
+extern crate svg2polylines;
+use std::io::{self, Read};
+use std::process::exit;
+use svg2polylines::{Polyline};
 
 fn main() {
-    for event in svg::read(io::stdin()).unwrap() {
-        match event {
-            Event::Tag(Path, _, attributes) => {
-                let data = attributes.get("d").unwrap();
-                let data = Data::parse(data).unwrap();
-                for command in data.iter() {
-                    match command {
-                        &Command::Move(..) => println!("Move!"),
-                        &Command::Line(..) => println!("Line!"),
-                        _ => {}
-                    }
-                }
-            }
-            _ => {}
+    let mut buffer = String::new();
+    io::stdin().read_to_string(&mut buffer).unwrap();
+
+    let polylines: Vec<Polyline> = svg2polylines::parse(&buffer).unwrap_or_else(|e| {
+        println!("Error: {}", e);
+        exit(2);
+    });
+
+    println!("Found {} polylines.", polylines.len());
+    for line in polylines {
+        for coord in line {
+            println!("- {:?}", coord);
         }
     }
 }

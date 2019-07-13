@@ -5,4 +5,4 @@ version = "0.0.1"
 authors = [ "Josh Cheek <josh.cheek@gmail.com>" ]
 
 [dependencies]
-svg = "^0.5.12"
+svg2polylines = "^0.5.1"
