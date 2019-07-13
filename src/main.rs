@@ -4,11 +4,11 @@ use std::process::exit;
 use svg2polylines::{CoordinatePair, Polyline};
 
 extern crate rustfft;
-use std::sync::Arc;
 use rustfft::FFTplanner;
 use rustfft::num_complex::Complex;
 use rustfft::num_traits::Zero;
 
+extern crate json;
 
 fn normalize(points: &mut Vec<CoordinatePair>) {
     // get min and max values
@@ -72,9 +72,11 @@ fn main() {
         // for num in line {
         //     println!("- {:?}", num);
         // }
-        for num in &output {
-            println!("- {}", num);
+        let mut result: Vec<Vec<f64>> = Vec::new();
+        for Complex { re, im } in &output {
+            result.push(vec![*re, *im]);
         }
+        println!("{}", json::stringify(result));
     }
 
 }

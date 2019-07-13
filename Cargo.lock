@@ -47,6 +47,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 name = "draw_fourier"
 version = "0.0.1"
 dependencies = [
+ "json 0.11.14 (registry+https://github.com/rust-lang/crates.io-index)",
  "rustfft 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "svg2polylines 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -101,6 +102,11 @@ dependencies = [
 [[package]]
 name = "float-cmp"
 version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
+name = "json"
+version = "0.11.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
@@ -296,6 +302,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum failure 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)" = "795bd83d3abeb9220f257e597aa0080a508b27533824adf336529648f6abf7e2"
 "checksum failure_derive 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)" = "ea1063915fd7ef4309e222a5a07cf9c319fb9c7836b1f89b85458672dbb127e1"
 "checksum float-cmp 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)" = "17ae3a6394183450225f33d9419cbd627b3cfc831e14f3f1146d5bcaf984e00c"
+"checksum json 0.11.14 (registry+https://github.com/rust-lang/crates.io-index)" = "01d7903059b22f1f09ced2fb9562507e3556a953caa2f835c64ab022bb6148c2"
 "checksum libc 0.2.59 (registry+https://github.com/rust-lang/crates.io-index)" = "3262021842bf00fe07dbd6cf34ff25c99d7a7ebef8deea84db72be3ea3bb0aff"
 "checksum log 0.4.7 (registry+https://github.com/rust-lang/crates.io-index)" = "c275b6ad54070ac2d665eef9197db647b32239c9d244bfb6f041a766d00da5b3"
 "checksum lyon_geom 0.12.7 (registry+https://github.com/rust-lang/crates.io-index)" = "bdb9bf1f1d43be9a9cc2343a7a096dc113cc25337a13e8f99721b01d1d548b60"
