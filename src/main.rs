@@ -1,7 +1,7 @@
 use std::io::{self, Read};
 use std::process::exit;
 use std::time::Duration;
-
+use std::convert::TryInto;
 use std::cmp::Ordering;
 
 extern crate svg2polylines;
@@ -37,9 +37,11 @@ fn draw_line(coefficients: Vec<Complex<f64>>) {
     canvas.clear();
     canvas.present();
     let mut iteration = 0;
+    let len = coefficients.len() as f64;
+    println!("len: {}", len);
     let mut event_pump = sdl_context.event_pump().unwrap();
     'running: loop {
-        iteration = iteration + 1;
+        iteration += 1;
         for event in event_pump.poll_iter() {
             match event {
                 Event::Quit {..} |
@@ -53,11 +55,10 @@ fn draw_line(coefficients: Vec<Complex<f64>>) {
 
         canvas.set_draw_color(Color::RGB(0, 0, 0));
         canvas.clear();
-        canvas.set_draw_color(Color::RGB(255, 0, 0));
 
         let mut mag_and_angle: Vec<(f64, f64, f64, f64)> = Vec::new();
         for (i, Complex { re, im }) in coefficients.iter().enumerate() {
-            let angle = 2.0*3.14159*(i as f64)*(iteration as f64);
+            let angle = 2.0*3.14159*(i as f64)*(iteration as f64)/len;
             let magnitude = (re*re + im*im).sqrt();
             mag_and_angle.push((*re, *im, angle, magnitude));
         }
@@ -66,34 +67,29 @@ fn draw_line(coefficients: Vec<Complex<f64>>) {
             if mag1 < mag2 { Ordering::Less } else { Ordering::Greater }
         );
 
-        // let mut sum_x = width/2;
-        // let mut sum_y = height/2;
-        // for (re, im, angle, _mag) in mag_and_angle {
-        //     let x = ((width/2) * re * angle.cos()) as i32;
-        //     let y = ((height/2) * im * angle.sin()) as i32;
+        canvas.set_draw_color(Color::RGB(255, 0, 0));
+        let half_width  : f64 = (width/2).try_into().unwrap();
+        let half_height : f64 = (height/2).try_into().unwrap();
+        let mut sum_x = half_width;
+        let mut sum_y = half_height;
+        for (re, im, angle, _mag) in mag_and_angle {
+            let x = sum_x + (half_width  * re * angle.cos());
+            let y = sum_y + (half_height * im * angle.sin());
 
-        //     match canvas.draw_line(
-        //         Point::new(sum_x, sum_y),
-        //         Point::new(x, y),
-        //     ) {
-        //         Ok(..) => (),
-        //         Err(..) => (),
-        //     }
+            match canvas.draw_line(
+                Point::new(sum_x  as i32, sum_y  as i32),
+                Point::new(x as i32, y as i32),
+            ) {
+                Ok(..) => (),
+                Err(..) => (),
+            }
 
-        //     sum_x += x;
-        //     sum_y += y;
-        // }
-
-        match canvas.draw_line(
-            Point::new(0, 0),
-            Point::new((width/2) as i32, (height/2) as i32),
-        ) {
-            Ok(..) => (),
-            Err(..) => (),
+            sum_x = x;
+            sum_y = y;
         }
 
         canvas.present();
-        ::std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 60));
+        ::std::thread::sleep(Duration::from_millis(100));
     }
 }
 
