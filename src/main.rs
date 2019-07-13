@@ -1,6 +1,10 @@
-extern crate svg2polylines;
 use std::io::{self, Read};
 use std::process::exit;
+use std::time::Duration;
+
+use std::cmp::Ordering;
+
+extern crate svg2polylines;
 use svg2polylines::{CoordinatePair, Polyline};
 
 extern crate rustfft;
@@ -8,7 +12,90 @@ use rustfft::FFTplanner;
 use rustfft::num_complex::Complex;
 use rustfft::num_traits::Zero;
 
-extern crate json;
+// extern crate json;
+
+extern crate sdl2;
+use sdl2::pixels::Color;
+use sdl2::event::Event;
+use sdl2::keyboard::Keycode;
+use sdl2::rect::Point;
+
+fn draw_line(coefficients: Vec<Complex<f64>>) {
+    let sdl_context = sdl2::init().unwrap();
+    let video_subsystem = sdl_context.video().unwrap();
+    let width  = 800;
+    let height = 600;
+
+    let window = video_subsystem.window("Fourier Drawing", width, height)
+        .position_centered()
+        .build()
+        .unwrap();
+
+    let mut canvas = window.into_canvas().build().unwrap();
+
+    canvas.set_draw_color(Color::RGB(0, 0, 0));
+    canvas.clear();
+    canvas.present();
+    let mut iteration = 0;
+    let mut event_pump = sdl_context.event_pump().unwrap();
+    'running: loop {
+        iteration = iteration + 1;
+        for event in event_pump.poll_iter() {
+            match event {
+                Event::Quit {..} |
+                Event::KeyDown { keycode: Some(Keycode::Escape), .. } |
+                Event::KeyDown { keycode: Some(Keycode::Q), .. } => {
+                    break 'running
+                },
+                _ => {}
+            }
+        }
+
+        canvas.set_draw_color(Color::RGB(0, 0, 0));
+        canvas.clear();
+        canvas.set_draw_color(Color::RGB(255, 0, 0));
+
+        let mut mag_and_angle: Vec<(f64, f64, f64, f64)> = Vec::new();
+        for (i, Complex { re, im }) in coefficients.iter().enumerate() {
+            let angle = 2.0*3.14159*(i as f64)*(iteration as f64);
+            let magnitude = (re*re + im*im).sqrt();
+            mag_and_angle.push((*re, *im, angle, magnitude));
+        }
+
+        mag_and_angle.sort_by(|(_,_,_,mag1), (_,_,_,mag2)|
+            if mag1 < mag2 { Ordering::Less } else { Ordering::Greater }
+        );
+
+        // let mut sum_x = width/2;
+        // let mut sum_y = height/2;
+        // for (re, im, angle, _mag) in mag_and_angle {
+        //     let x = ((width/2) * re * angle.cos()) as i32;
+        //     let y = ((height/2) * im * angle.sin()) as i32;
+
+        //     match canvas.draw_line(
+        //         Point::new(sum_x, sum_y),
+        //         Point::new(x, y),
+        //     ) {
+        //         Ok(..) => (),
+        //         Err(..) => (),
+        //     }
+
+        //     sum_x += x;
+        //     sum_y += y;
+        // }
+
+        match canvas.draw_line(
+            Point::new(0, 0),
+            Point::new((width/2) as i32, (height/2) as i32),
+        ) {
+            Ok(..) => (),
+            Err(..) => (),
+        }
+
+        canvas.present();
+        ::std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 60));
+    }
+}
 
 fn normalize(points: &mut Vec<CoordinatePair>) {
     // get min and max values
@@ -52,6 +139,7 @@ fn main() {
     });
 
 
+    // current expectation: there is only one line
     for mut line in polylines {
         let num_samples = line.len();
         let mut input:  Vec<Complex<f64>> = vec![Complex::zero(); num_samples];
@@ -69,14 +157,16 @@ fn main() {
         let fft = planner.plan_fft(num_samples);
         fft.process(&mut input, &mut output);
 
+        draw_line(output);
+
         // for num in line {
         //     println!("- {:?}", num);
         // }
-        let mut result: Vec<Vec<f64>> = Vec::new();
-        for Complex { re, im } in &output {
-            result.push(vec![*re, *im]);
-        }
-        println!("{}", json::stringify(result));
+        // let mut result: Vec<Vec<f64>> = Vec::new();
+        // for Complex { re, im } in &output {
+        //     result.push(vec![*re, *im]);
+        // }
+        // println!("{}", json::stringify(result));
     }
 
 }
