@@ -6,6 +6,4 @@ authors = [ "Josh Cheek <josh.cheek@gmail.com>" ]
 
 [dependencies]
 svg2polylines = "^0.5.1"
-rustfft = "^3.0.0"
-json = "0.11.14"
 sdl2 = "0.32.2"

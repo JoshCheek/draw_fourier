@@ -69,7 +69,7 @@ fn draw(coefficients: Vec<(f64, f64)>) {
         let mut sum_x = 0.0;
         let mut sum_y = 0.0;
 
-        for (re, im, angle, mag) in mag_and_angle {
+        for (re, im, angle, _mag) in mag_and_angle {
             let c = angle.cos();
             let s = angle.sin();
             let new_x = sum_x + c*re + s*im;
@@ -86,9 +86,6 @@ fn draw(coefficients: Vec<(f64, f64)>) {
                     (new_y * half_height + half_height) as i32,
                 ),
             ) { Ok(..) | Err(..) => () }
-            // mags.push(mag);
-            // circles.push(sum_x);
-            // circles.push(sum_y);
 
             sum_x = new_x;
             sum_y = new_y;
@@ -115,61 +112,6 @@ fn draw(coefficients: Vec<(f64, f64)>) {
     }
 }
 
-fn draw2(points: Vec<(f64, f64)>) {
-    let sdl_context = sdl2::init().unwrap();
-    let video_subsystem = sdl_context.video().unwrap();
-    let width  = 800;
-    let height = 600;
-    let half_width  : f64 = (width/2).try_into().unwrap();
-    let half_height : f64 = (height/2).try_into().unwrap();
-
-    let window = video_subsystem.window("Fourier Drawing", width, height)
-        .position_centered()
-        .build()
-        .unwrap();
-
-    let mut canvas = window.into_canvas().build().unwrap();
-
-    canvas.set_draw_color(Color::RGB(0, 0, 0));
-    canvas.clear();
-    canvas.present();
-
-    let mut event_pump = sdl_context.event_pump().unwrap();
-    'running: loop {
-        for event in event_pump.poll_iter() {
-            match event {
-                Event::Quit {..} |
-                Event::KeyDown { keycode: Some(Keycode::Escape), .. } |
-                Event::KeyDown { keycode: Some(Keycode::Q), .. } => {
-                    break 'running
-                },
-                _ => {}
-            }
-        }
-
-        canvas.set_draw_color(Color::RGB(0, 0, 0));
-        canvas.clear();
-
-        canvas.set_draw_color(Color::RGB(255, 0, 0));
-        for i in 1..points.len() {
-            let (x1, y1) = points[i-1];
-            let (x2, y2) = points[i];
-            match canvas.draw_line(
-                Point::new(
-                    (x1 * half_width + half_width) as i32,
-                    (y1 * half_height + half_height) as i32,
-                ),
-                Point::new(
-                    (x2 * half_width + half_width) as i32,
-                    (y2 * half_height + half_height) as i32,
-                ),
-            ) { Ok(..) | Err(..) => () }
-        }
-
-        canvas.present();
-        ::std::thread::sleep(Duration::from_millis(100));
-    }
-}
 
 fn normalize(points: &Vec<(f64, f64)>) -> Vec<(f64, f64)> {
     // get min and max values
@@ -290,10 +232,7 @@ fn main() {
             )
         );
 
-        let coefficients = fft(samples);
-
-        draw(coefficients);
-        // draw2(samples);
+        draw(fft(samples));
     }
 
 }
