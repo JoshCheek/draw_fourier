@@ -20,7 +20,7 @@ use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 use sdl2::rect::Point;
 
-fn draw_line(coefficients: Vec<Complex<f64>>) {
+fn draw(coefficients: Vec<Complex<f64>>) {
     let sdl_context = sdl2::init().unwrap();
     let video_subsystem = sdl_context.video().unwrap();
     let width  = 800;
@@ -37,11 +37,12 @@ fn draw_line(coefficients: Vec<Complex<f64>>) {
     canvas.clear();
     canvas.present();
     let mut iteration = 0;
-    let len = coefficients.len() as f64;
-    println!("len: {}", len);
+    let len = coefficients.len();
+    let mut drawn : Vec<(i32, i32)> = Vec::new();
     let mut event_pump = sdl_context.event_pump().unwrap();
     'running: loop {
         iteration += 1;
+        iteration %= len;
         for event in event_pump.poll_iter() {
             match event {
                 Event::Quit {..} |
@@ -58,7 +59,7 @@ fn draw_line(coefficients: Vec<Complex<f64>>) {
 
         let mut mag_and_angle: Vec<(f64, f64, f64, f64)> = Vec::new();
         for (i, Complex { re, im }) in coefficients.iter().enumerate() {
-            let angle = 2.0*3.14159*(i as f64)*(iteration as f64)/len;
+            let angle = 2.0*3.14159*(i as f64)*(iteration as f64)/(len as f64);
             let magnitude = (re*re + im*im).sqrt();
             mag_and_angle.push((*re, *im, angle, magnitude));
         }
@@ -79,13 +80,22 @@ fn draw_line(coefficients: Vec<Complex<f64>>) {
             match canvas.draw_line(
                 Point::new(sum_x  as i32, sum_y  as i32),
                 Point::new(x as i32, y as i32),
-            ) {
-                Ok(..) => (),
-                Err(..) => (),
-            }
+            ) { Ok(..) | Err(..) => () }
 
             sum_x = x;
             sum_y = y;
+        }
+
+        drawn.push((sum_x as i32, sum_y as i32));
+
+        canvas.set_draw_color(Color::RGB(0, 255, 255));
+        for i in 1..drawn.len() {
+            let (x1, y1) = drawn[i-1];
+            let (x2, y2) = drawn[i];
+            match canvas.draw_line(
+                Point::new(x1, y1),
+                Point::new(x2, y2),
+            ) { Ok(..) | Err(..) => () }
         }
 
         canvas.present();
@@ -153,7 +163,7 @@ fn main() {
         let fft = planner.plan_fft(num_samples);
         fft.process(&mut input, &mut output);
 
-        draw_line(output);
+        draw(output);
 
         // for num in line {
         //     println!("- {:?}", num);
