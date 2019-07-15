@@ -71,24 +71,38 @@ fn draw(coefficients: Vec<Complex<f64>>) {
         canvas.set_draw_color(Color::RGB(255, 0, 0));
         let half_width  : f64 = (width/2).try_into().unwrap();
         let half_height : f64 = (height/2).try_into().unwrap();
-        let mut sum_x = half_width;
-        let mut sum_y = half_height;
-        for (re, im, angle, _mag) in mag_and_angle {
-            let x = sum_x + (half_width  * re * angle.cos());
-            let y = sum_y + (half_height * im * angle.sin());
+        let mut sum_x   = half_width;
+        let mut sum_y   = half_height;
 
+        for (re, im, angle, mag) in mag_and_angle {
+            let c = angle.cos();
+            let s = angle.sin();
+            let new_x = sum_x + c*re + s*im;
+            let new_y = sum_y + c*im - s*re;
+
+            // println!("{}, {}", sum_x, sum_y);
             match canvas.draw_line(
-                Point::new(sum_x  as i32, sum_y  as i32),
-                Point::new(x as i32, y as i32),
+                Point::new(
+                    (sum_x) as i32,
+                    (sum_y) as i32,
+                ),
+                Point::new(
+                    (new_x) as i32,
+                    (new_y) as i32,
+                ),
             ) { Ok(..) | Err(..) => () }
+            // mags.push(mag);
+            // circles.push(sum_x);
+            // circles.push(sum_y);
 
-            sum_x = x;
-            sum_y = y;
+            sum_x = new_x;
+            sum_y = new_y;
         }
+
 
         drawn.push((sum_x as i32, sum_y as i32));
 
-        canvas.set_draw_color(Color::RGB(0, 255, 255));
+        canvas.set_draw_color(Color::RGB(255, 255, 255));
         for i in 1..drawn.len() {
             let (x1, y1) = drawn[i-1];
             let (x2, y2) = drawn[i];
@@ -266,12 +280,14 @@ fn main() {
             input[i] = Complex::new(*x, *y);
         }
 
+        println!("{:?}", samples);
+
         let mut planner = FFTplanner::new(false);
         let fft = planner.plan_fft(num_samples);
         fft.process(&mut input, &mut output);
 
-        // draw(output);
-        draw2(samples);
+        draw(output);
+        // draw2(samples);
     }
 
 }
