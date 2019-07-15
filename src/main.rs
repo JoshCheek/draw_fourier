@@ -7,11 +7,6 @@ use std::cmp::Ordering;
 extern crate svg2polylines;
 use svg2polylines::{Polyline};
 
-extern crate rustfft;
-use rustfft::FFTplanner;
-use rustfft::num_complex::Complex;
-use rustfft::num_traits::Zero;
-
 // extern crate json;
 
 extern crate sdl2;
@@ -20,7 +15,7 @@ use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 use sdl2::rect::Point;
 
-fn draw(coefficients: Vec<Complex<f64>>) {
+fn draw(coefficients: Vec<(f64, f64)>) {
     let sdl_context = sdl2::init().unwrap();
     let video_subsystem = sdl_context.video().unwrap();
     let width  = 800;
@@ -58,7 +53,7 @@ fn draw(coefficients: Vec<Complex<f64>>) {
         canvas.clear();
 
         let mut mag_and_angle: Vec<(f64, f64, f64, f64)> = Vec::new();
-        for (i, Complex { re, im }) in coefficients.iter().enumerate() {
+        for (i, (re, im)) in coefficients.iter().enumerate() {
             let angle = 2.0*3.14159*(i as f64)*(iteration as f64)/(len as f64);
             let magnitude = (re*re + im*im).sqrt();
             mag_and_angle.push((*re, *im, angle, magnitude));
@@ -71,8 +66,8 @@ fn draw(coefficients: Vec<Complex<f64>>) {
         canvas.set_draw_color(Color::RGB(255, 0, 0));
         let half_width  : f64 = (width/2).try_into().unwrap();
         let half_height : f64 = (height/2).try_into().unwrap();
-        let mut sum_x   = half_width;
-        let mut sum_y   = half_height;
+        let mut sum_x = 0.0;
+        let mut sum_y = 0.0;
 
         for (re, im, angle, mag) in mag_and_angle {
             let c = angle.cos();
@@ -83,12 +78,12 @@ fn draw(coefficients: Vec<Complex<f64>>) {
             // println!("{}, {}", sum_x, sum_y);
             match canvas.draw_line(
                 Point::new(
-                    (sum_x) as i32,
-                    (sum_y) as i32,
+                    (sum_x * half_height + half_width ) as i32,
+                    (sum_y * half_height + half_height) as i32,
                 ),
                 Point::new(
-                    (new_x) as i32,
-                    (new_y) as i32,
+                    (new_x * half_height + half_width) as i32,
+                    (new_y * half_height + half_height) as i32,
                 ),
             ) { Ok(..) | Err(..) => () }
             // mags.push(mag);
@@ -100,7 +95,10 @@ fn draw(coefficients: Vec<Complex<f64>>) {
         }
 
 
-        drawn.push((sum_x as i32, sum_y as i32));
+        drawn.push((
+            (sum_x * half_height + half_width) as i32,
+            (sum_y * half_height + half_height) as i32,
+        ));
 
         canvas.set_draw_color(Color::RGB(255, 255, 255));
         for i in 1..drawn.len() {
@@ -193,7 +191,7 @@ fn normalize(points: &Vec<(f64, f64)>) -> Vec<(f64, f64)> {
         }
     }
 
-    // convert to -0.5 .. 0.5 on x and y axis (assume same aspect ratio)
+    // convert to 0 .. 0.5 on x and y axis (assume same aspect ratio)
     let delta_x = max_x - min_x;
     let delta_y = max_y - min_y;
     let side    = if delta_x < delta_y { delta_y } else { delta_x };
@@ -253,6 +251,25 @@ fn sample_points(line: Vec<(f64, f64)>, num_samples: usize) -> Vec<(f64, f64)> {
     samples
 }
 
+fn fft(samples : Vec<(f64, f64)>) -> Vec<(f64, f64)> {
+    let n = samples.len() as f64;
+    let mut coefficients = Vec::new();
+    for u in 0..samples.len() {
+      let mut real = 0.0;
+      let mut imaginary = 0.0;
+      for (k, (f_real, f_imaginary)) in samples.iter().enumerate() {
+        let p = -2.0*3.14159*(u as f64)*(k as f64)/n;
+        let c = p.cos();
+        let s = p.sin();
+        real      += c*f_real      + s*f_imaginary;
+        imaginary += c*f_imaginary - s*f_real;
+      }
+      coefficients.push((real/n, imaginary/n));
+    }
+    coefficients
+}
+
+
 fn main() {
     let mut buffer = String::new();
     io::stdin().read_to_string(&mut buffer).unwrap();
@@ -265,7 +282,7 @@ fn main() {
 
     // current expectation: there is only one line
     for line in polylines {
-        let num_samples = 1000 as usize;
+        let num_samples = 100 as usize;
         let samples = normalize(
             &sample_points(
                 line.into_iter().map(|pair| (pair.x, pair.y)).collect(),
@@ -273,20 +290,9 @@ fn main() {
             )
         );
 
-        let mut input:  Vec<Complex<f64>> = vec![Complex::zero(); num_samples];
-        let mut output: Vec<Complex<f64>> = vec![Complex::zero(); num_samples];
+        let coefficients = fft(samples);
 
-        for (i, (x, y)) in samples.iter().enumerate() {
-            input[i] = Complex::new(*x, *y);
-        }
-
-        println!("{:?}", samples);
-
-        let mut planner = FFTplanner::new(false);
-        let fft = planner.plan_fft(num_samples);
-        fft.process(&mut input, &mut output);
-
-        draw(output);
+        draw(coefficients);
         // draw2(samples);
     }
 
