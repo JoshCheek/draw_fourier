@@ -7,3 +7,7 @@ authors = [ "Josh Cheek <josh.cheek@gmail.com>" ]
 [dependencies]
 svg2polylines = "^0.5.1"
 sdl2 = "0.32.2"
+svg = "0.5.12"
+lyon_path = "0.13.2"
+lyon_svg = "0.13.0"
+lyon_geom = "0.12.7"
